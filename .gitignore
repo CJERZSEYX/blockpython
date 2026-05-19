@@ -1,7 +1,40 @@
 node_modules/
 dist/
+dist-pkg/
+deploy-pkg/
 *.log
 .env
 deploy*.tar.gz
-deploy*.zip
 *.tmp
+# Temp scripts from development
+backend/check_*.js
+backend/debug_*.js
+backend/fix_*.js
+backend/llm_translate.js
+backend/patch_final.js
+backend/setup_*.js
+backend/start_*.js
+backend/sync*.js
+backend/test_*.js
+backend/verify_*.js
+backend/clean_*.js
+backend/*.tar.gz
+backend/remote_update.sql
+# Temp data files
+backend/task_cn_*.json
+backend/task*_full.json
+backend/t1_en.json
+backend/t3_en.json
+backend/t4_en.json
+backend/check.json
+backend/runSeed.cjs
+# Deployment (keep deploy.js)
+backend/deploy2.js
+backend/deploy3.js
+backend/deploy_final.js
+backend/deploy-en.tar.gz
+sync_tasks.js
+# Docker (not used)
+Dockerfile
+docker-compose.yml
+.dockerignore
