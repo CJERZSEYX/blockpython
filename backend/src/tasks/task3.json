@@ -1,0 +1,73 @@
+{
+  "title": "任务三：输入与变量",
+  "description": "学习用 input() 获取用户输入，存储到变量中，再根据输入做判断",
+  "sort_order": 3,
+  "content_json": {
+    "p_stage": {
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "获取输入",
+          "blocks": [
+            {
+              "block_id": "sensing_ask",
+              "block_type": "input 输入",
+              "python_code": "name = input('请输入你的名字：')",
+              "explanation": "input() 函数会让程序停下来等用户输入。括号里的文字是提示语。用户输入的内容会被存到 name 变量里。",
+              "color": "green"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "存储到变量",
+          "blocks": [
+            {
+              "block_id": "variables_set",
+              "block_type": "变量赋值",
+              "python_code": "name = ...",
+              "explanation": "name 是变量名，= 右边就是 input() 拿到的内容。变量名可以自己取，但要见名知义。",
+              "color": "orange"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "拼接与输出",
+          "blocks": [
+            {
+              "block_id": "text_join",
+              "block_type": "文本拼接",
+              "python_code": "print('你好，' + name)",
+              "explanation": "用 + 号可以把文字拼在一起。",
+              "color": "purple"
+            }
+          ]
+        }
+      ]
+    },
+    "a_stage": {
+      "python_code": "name = input(\"请输入你的名字：\")\nprint(\"你好，\" + name)",
+      "expected_blocks": "variables_set+text_print+text_join"
+    },
+    "c_stage": {
+      "title": "输入年龄判断成年",
+      "description": "让用户输入年龄，如果 >=18 输出成年，否则输出未成年。",
+      "block_image": "age_input_block.svg",
+      "code_skeleton": "age = int(input(___))\nif ___: \n    print(___)\nelse:\n    print(___)",
+      "expected_output": "成年"
+    },
+    "i_stage": {
+      "summary_points": [
+        "input() 让程序接收用户输入，返回值永远是字符串",
+        "int() 可以把字符串转成整数",
+        "变量用来存储数据，方便复用",
+        "+ 号可以拼接字符串"
+      ],
+      "question_prompts": [
+        "如果用户输入的不是数字（比如输入abc），int() 会发生什么？",
+        "input() 返回的永远是字符串，想输入小数该怎么办？"
+      ]
+    }
+  }
+}

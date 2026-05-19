@@ -1,0 +1,80 @@
+{
+  "title": "任务一：判断成绩",
+  "description": "学习 if-else 条件判断，根据成绩输出及格或不及格",
+  "sort_order": 1,
+  "content_json": {
+    "p_stage": {
+      "subtasks": [
+        {
+          "id": 1,
+          "title": "获取变量",
+          "blocks": [
+            {
+              "block_id": "variables_set",
+              "block_type": "变量赋值",
+              "python_code": "score = 85",
+              "explanation": "创建一个变量score，把85存进去。变量就像一个标签，贴在一个数值上方便后面使用。",
+              "color": "orange"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "title": "条件判断",
+          "blocks": [
+            {
+              "block_id": "controls_if",
+              "block_type": "if-else 判断",
+              "python_code": "if score >= 60:\n    print('及格')\nelse:\n    print('不及格')",
+              "explanation": "if 后面跟一个条件。条件成立就执行 if 里面的代码，不成立就执行 else 里面的代码。注意冒号和缩进！",
+              "color": "blue"
+            },
+            {
+              "block_id": "logic_compare",
+              "block_type": "比较运算",
+              "python_code": "score >= 60",
+              "explanation": ">= 表示[大于或等于]。比较的结果要么是 True，要么是 False。",
+              "color": "orange"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "title": "输出结果",
+          "blocks": [
+            {
+              "block_id": "text_print",
+              "block_type": "print 输出",
+              "python_code": "print('及格')",
+              "explanation": "print() 函数会把括号里的内容显示到屏幕上。文字需要用引号包起来。",
+              "color": "green"
+            }
+          ]
+        }
+      ]
+    },
+    "a_stage": {
+      "python_code": "score = 85\nif score >= 60:\n    print(\"及格\")\nelse:\n    print(\"不及格\")",
+      "expected_blocks": "controls_if+logic_compare+variables_set+text_print"
+    },
+    "c_stage": {
+      "title": "判断是否成年",
+      "description": "根据年龄判断一个人是否成年（>=18岁）。",
+      "block_image": "if_age_block.svg",
+      "code_skeleton": "age = ___\nif ___: \n    print(___)\nelse:\n    print(___)",
+      "expected_output": "成年"
+    },
+    "i_stage": {
+      "summary_points": [
+        "if-else 用于根据条件执行不同的代码",
+        "比较运算符（>=, >, <, <=, ==）返回 True 或 False",
+        "Python 靠缩进来区分代码块",
+        "print() 输出内容到屏幕"
+      ],
+      "question_prompts": [
+        "如果把条件改成 score > 60，成绩刚好 60 分时会怎样？",
+        "如果只有两种成绩等级不够，想分A/B/C/D四等怎么办？"
+      ]
+    }
+  }
+}

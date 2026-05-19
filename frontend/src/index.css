@@ -1,0 +1,30 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #f8f9fa;
+  color: #2d3436;
+}
+
+@keyframes fadeInUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes checkPop { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+.animate-fadeIn { animation: fadeInUp 0.3s ease; }
+.animate-scaleIn { animation: scaleIn 0.25s ease; }
+
+a, button, .ant-btn, .ant-card-hoverable, .ant-menu-item, .ant-tag {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ant-card-hoverable, .ant-btn, .ant-tag, .ant-menu-item, [role="button"], [onclick], .clickable { cursor: pointer; }
+.ant-card-hoverable:hover { box-shadow: 0 6px 20px rgba(67, 97, 238, 0.1) !important; transform: translateY(-2px); }
+:focus-visible { outline: 2px solid #4361ee; outline-offset: 2px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+.stage-step-enter { animation: fadeInUp 0.35s ease both; }
+.stage-step-enter:nth-child(1) { animation-delay: 0s; }
+.stage-step-enter:nth-child(2) { animation-delay: 0.08s; }
+.stage-step-enter:nth-child(3) { animation-delay: 0.16s; }
+.stage-step-enter:nth-child(4) { animation-delay: 0.24s; }

@@ -1,0 +1,114 @@
+﻿{
+    "a_stage":  {
+                    "python_code":  "for i in range(10):\n    if i % 2 == 0:\n        print(\"Even\")\n    else:\n        print(\"Odd\")"
+                },
+    "c_stage":  {
+                    "title":  "Count Even Numbers",
+                    "blocks_xml":  "\u003cxml xmlns=\"https://developers.google.com/blockly/xml\"\u003e\n  \u003cblock type=\"variables_set\"\u003e\n    \u003cfield name=\"VAR\"\u003ecount\u003c/field\u003e\n    \u003cvalue name=\"VALUE\"\u003e\n      \u003cblock type=\"math_number\"\u003e\n        \u003cfield name=\"NUM\"\u003e0\u003c/field\u003e\n      \u003c/block\u003e\n    \u003c/value\u003e\n    \u003cnext\u003e\n      \u003cblock type=\"controls_repeat_ext\"\u003e\n        \u003cvalue name=\"TIMES\"\u003e\n          \u003cblock type=\"math_number\"\u003e\n            \u003cfield name=\"NUM\"\u003e10\u003c/field\u003e\n          \u003c/block\u003e\n        \u003c/value\u003e\n        \u003cstatement name=\"DO\"\u003e\n          \u003cblock type=\"controls_if\"\u003e\n            \u003cvalue name=\"IF0\"\u003e\n              \u003cblock type=\"math_arithmetic\"\u003e\n                \u003cfield name=\"OP\"\u003eMODULO\u003c/field\u003e\n                \u003cvalue name=\"A\"\u003e\n                  \u003cblock type=\"variables_get\"\u003e\n                    \u003cfield name=\"VAR\"\u003ei\u003c/field\u003e\n                  \u003c/block\u003e\n                \u003c/value\u003e\n                \u003cvalue name=\"B\"\u003e\n                  \u003cblock type=\"math_number\"\u003e\n                    \u003cfield name=\"NUM\"\u003e2\u003c/field\u003e\n                  \u003c/block\u003e\n                \u003c/value\u003e\n              \u003c/block\u003e\n            \u003c/value\u003e\n            \u003cstatement name=\"DO0\"\u003e\n              \u003cblock type=\"variables_set\"\u003e\n                \u003cfield name=\"VAR\"\u003ecount\u003c/field\u003e\n                \u003cvalue name=\"VALUE\"\u003e\n                  \u003cblock type=\"math_arithmetic\"\u003e\n                    \u003cfield name=\"OP\"\u003eADD\u003c/field\u003e\n                    \u003cvalue name=\"A\"\u003e\n                      \u003cblock type=\"variables_get\"\u003e\n                        \u003cfield name=\"VAR\"\u003ecount\u003c/field\u003e\n                      \u003c/block\u003e\n                    \u003c/value\u003e\n                    \u003cvalue name=\"B\"\u003e\n                      \u003cblock type=\"math_number\"\u003e\n                        \u003cfield name=\"NUM\"\u003e1\u003c/field\u003e\n                      \u003c/block\u003e\n                    \u003c/value\u003e\n                  \u003c/block\u003e\n                \u003c/value\u003e\n              \u003c/block\u003e\n            \u003c/statement\u003e\n          \u003c/block\u003e\n        \u003c/statement\u003e\n        \u003cnext\u003e\n          \u003cblock type=\"text_print\"\u003e\n            \u003cvalue name=\"TEXT\"\u003e\n              \u003cblock type=\"variables_get\"\u003e\n                \u003cfield name=\"VAR\"\u003ecount\u003c/field\u003e\n              \u003c/block\u003e\n            \u003c/value\u003e\n          \u003c/block\u003e\n        \u003c/next\u003e\n      \u003c/block\u003e\n    \u003c/next\u003e\n  \u003c/block\u003e\n\u003c/xml\u003e",
+                    "answer_code":  "count = 0\nfor i in range(10):\n    if i % 2 == 0:\n        count = count + 1\nprint(count)",
+                    "description":  "循环 10 次，数一数其中有多少个偶数。提示：先用一个变量 count=0，每次遇到偶数就让 count 加 1。",
+                    "code_skeleton":  "",
+                    "expected_output":  "5"
+                },
+    "i_stage":  {
+                    "summary_points":  [
+                                           "for 循环可以遍历一段数字",
+                                           "% 取余运算能判断奇偶",
+                                           "if 可以放在循环里做逐次判断",
+                                           "用变量计数是常见的编程技巧"
+                                       ],
+                    "question_prompts":  [
+                                             "如果不数偶数，改为数奇数，代码要改哪里？",
+                                             "count = count + 1 这个写法和 count += 1 一样吗？"
+                                         ]
+                },
+    "p_stage":  {
+                    "subtasks":  [
+                                     {
+                                         "id":  1,
+                                         "title":  "循环回顾",
+                                         "blocks":  [
+                                                        {
+                                                            "color":  "blue",
+                                                            "block_id":  "controls_repeat_ext",
+                                                            "block_type":  "重复N次",
+                                                            "explanation":  "回顾：for 循环让 print(i) 执行 10 次，i 从 0 到 9。",
+                                                            "python_code":  "for i in range(10):\n    print(i)"
+                                                        }
+                                                    ]
+                                     },
+                                     {
+                                         "id":  2,
+                                         "title":  "取余运算",
+                                         "blocks":  [
+                                                        {
+                                                            "color":  "orange",
+                                                            "block_id":  "math_arithmetic",
+                                                            "block_type":  "加减乘除取余",
+                                                            "explanation":  "% 是取余数运算。i % 2 得到 i 除以 2 的余数。余数为 0 说明 i 是偶数。",
+                                                            "python_code":  "i % 2"
+                                                        }
+                                                    ]
+                                     },
+                                     {
+                                         "id":  3,
+                                         "title":  "循环里判断",
+                                         "blocks":  [
+                                                        {
+                                                            "color":  "blue",
+                                                            "block_id":  "controls_if",
+                                                            "block_type":  "if-else 判断",
+                                                            "explanation":  "把 if 放进循环里——每轮循环都执行一次判断。",
+                                                            "python_code":  "if i % 2 == 0:\n    print(\u0027偶\u0027)\nelse:\n    print(\u0027奇\u0027)"
+                                                        }
+                                                    ]
+                                     }
+                                 ]
+                },
+    "inferred_blocks":  {
+                            "text":  {
+                                         "count":  2,
+                                         "fields":  {
+                                                        "TEXT":  [
+                                                                     "Even",
+                                                                     "Odd"
+                                                                 ]
+                                                    }
+                                     },
+                            "text_print":  {
+                                               "count":  2
+                                           },
+                            "controls_if":  {
+                                                "count":  1
+                                            },
+                            "math_number":  {
+                                                "count":  3,
+                                                "fields":  {
+                                                               "NUM":  [
+                                                                           "10",
+                                                                           "2",
+                                                                           "0"
+                                                                       ]
+                                                           }
+                                            },
+                            "logic_compare":  {
+                                                  "count":  1,
+                                                  "fields":  {
+                                                                 "OP":  [
+                                                                            "EQ"
+                                                                        ]
+                                                             }
+                                              },
+                            "math_arithmetic":  {
+                                                    "count":  1,
+                                                    "fields":  {
+                                                                   "OP":  [
+                                                                              "MODULO"
+                                                                          ]
+                                                               }
+                                                },
+                            "controls_repeat_ext":  {
+                                                        "count":  1
+                                                    }
+                        }
+}
