@@ -4,13 +4,18 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test:validation": "tsx src/tests/validation.ts",
+    "test:api": "tsx src/tests/apiValidation.ts",
+    "test:summary": "tsx src/tests/summaryValidation.ts",
+    "cleanup:test-data": "tsx src/scripts/cleanupTestData.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
-    "mysql2": "^3.22.3",
+    "fast-xml-parser": "^5.10.1",
+    "mysql2": "^3.11.0",
     "uuid": "^10.0.0"
   },
   "devDependencies": {

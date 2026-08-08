@@ -4,7 +4,10 @@ const store = new Map<string, { count: number; resetAt: number }>();
 
 export function rateLimit(maxRequests: number, windowMs: number) {
   return (req: Request, res: Response, next: NextFunction) => {
-    const key = req.ip || "unknown";
+    const session = (req as any).session;
+    const key = session?.user_id
+      ? `${session.role}:${session.user_id}`
+      : req.ip || "unknown";
     const now = Date.now();
     const entry = store.get(key);
 

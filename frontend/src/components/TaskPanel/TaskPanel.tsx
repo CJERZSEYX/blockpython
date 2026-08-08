@@ -1,4 +1,4 @@
-import { Typography, Space } from "antd";
+import { Typography } from "antd";
 import type { Stage, TaskContent } from "../../types";
 import type { BlocklyEditorHandle } from "../BlocklyEditor/BlocklyEditor";
 import PStagePanel from "./PStagePanel";
@@ -6,9 +6,11 @@ import AStagePanel from "./AStagePanel";
 import CStagePanel from "./CStagePanel";
 import IStagePanel from "./IStagePanel";
 import { stageLabels } from "./constants";
-import { useAppStore } from "../../store/useAppStore";
+import ExecutionVisualizer from "../ExecutionVisualizer/ExecutionVisualizer";
+import LearningGuide from "./LearningGuide";
+import { PartitionOutlined, PlayCircleOutlined, ExperimentOutlined, TeamOutlined } from "@ant-design/icons";
 
-const { Text, Paragraph } = Typography;
+const { Paragraph } = Typography;
 
 interface TaskPanelProps {
   stage: Stage;
@@ -19,30 +21,42 @@ interface TaskPanelProps {
 
 export default function TaskPanel({ stage, taskContent, blocklyRef, taskId }: TaskPanelProps) {
   const content = stageLabels[stage];
-  const selectedTask = useAppStore((s) => s.selectedTask);
+  const stageIcon = {
+    P: <PartitionOutlined />,
+    A: <PlayCircleOutlined />,
+    C: <ExperimentOutlined />,
+    I: <TeamOutlined />,
+  }[stage];
 
   return (
-    <div>
-      <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ fontSize: 20, color: "#1677ff", display: "block", marginBottom: 8 }}>{content.title}</Text>
-        <Paragraph type="secondary" style={{ marginBottom: 0 }}>{content.description}</Paragraph>
+    <div className={`task-panel stage-${stage.toLowerCase()}`}>
+      <div className="task-panel-heading">
+        <span className="task-panel-index" aria-hidden="true">{stageIcon}</span>
+        <div>
+        <div className="task-panel-title">{content.title}</div>
+        <Paragraph className="task-panel-desc">{content.description}</Paragraph>
+        </div>
       </div>
 
-      <Space orientation="vertical" style={{ width: "100%" }} size="large">
+      <div className="task-panel-content">
         {stage === "P" && (
           <>
-            {selectedTask?.description && (
-              <Paragraph type="secondary" style={{ background: "#f6f8fa", padding: 12, borderRadius: 6, fontSize: 14 }}>
-                Task: {selectedTask.description}
-              </Paragraph>
-            )}
+            <LearningGuide guide={taskContent?.learning_guide} stage="P" />
             <PStagePanel subtasks={taskContent?.p_stage?.subtasks} />
+            {taskContent?.visualization?.type && (
+              <ExecutionVisualizer
+                type={taskContent.visualization.type}
+                visualization={taskContent.visualization}
+                result={null}
+                idleMessage="先阅读任务说明，后面的练习会在这里展示程序效果。"
+              />
+            )}
           </>
         )}
         {stage === "A" && <AStagePanel taskContent={taskContent} blocklyRef={blocklyRef} taskId={taskId} />}
-        {stage === "C" && <CStagePanel taskContent={taskContent} />}
+        {stage === "C" && <CStagePanel taskContent={taskContent} taskId={taskId} />}
         {stage === "I" && <IStagePanel />}
-      </Space>
+      </div>
     </div>
   );
 }

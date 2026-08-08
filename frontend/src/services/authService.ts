@@ -13,3 +13,7 @@ export const login = async (student_id: string, password: string, role?: string)
   });
   return data;
 };
+
+export const logout = async () => {
+  await api.post("/auth/logout");
+};

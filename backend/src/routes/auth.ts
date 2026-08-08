@@ -5,13 +5,22 @@ import { hashPassword, verifyPassword } from "../utils/hash";
 
 export const authRouter = Router();
 
+async function logStudentLogin(userId: string, sessionId: string) {
+  await pool.query(
+    `INSERT INTO user_actions
+      (user_id, session_id, action_type, action_detail)
+     VALUES (?, ?, 'login_session', ?)`,
+    [userId, sessionId, JSON.stringify({ source: "student_login" })]
+  );
+}
+
 authRouter.post("/login", async (req: Request, res: Response) => {
   try {
     const { student_id, password, role } = req.body;
 
     if (role === "teacher") {
       const teacherUser = process.env.TEACHER_USER || "admin";
-      const teacherPass = process.env.TEACHER_PASS || "admin123";
+      const teacherPass = process.env.TEACHER_PASS || "";
 
       if (student_id !== teacherUser) {
         res.status(401).json({ error: "账号或密码错误" });
@@ -22,7 +31,7 @@ authRouter.post("/login", async (req: Request, res: Response) => {
       const [tRows] = await pool.query<any[]>("SELECT password_hash FROM users WHERE id = ? AND role = 'teacher'", [teacherUser]);
       if (tRows.length > 0 && tRows[0].password_hash) {
         if (verifyPassword(password, tRows[0].password_hash)) {
-          const token = createSession(teacherUser, "teacher", "教师");
+          const token = await createSession(teacherUser, "teacher", "教师");
           res.json({ user: { id: teacherUser, name: "教师", role: "teacher" }, session_id: token });
           return;
         }
@@ -31,8 +40,12 @@ authRouter.post("/login", async (req: Request, res: Response) => {
       }
 
       // 回退到 .env 中的明文密码
+      if (!teacherPass) {
+        res.status(503).json({ error: "教师账号尚未配置密码" });
+        return;
+      }
       if (password === teacherPass) {
-        const token = createSession(teacherUser, "teacher", "教师");
+        const token = await createSession(teacherUser, "teacher", "教师");
         res.json({ user: { id: teacherUser, name: "教师", role: "teacher" }, session_id: token });
         return;
       }
@@ -56,7 +69,8 @@ authRouter.post("/login", async (req: Request, res: Response) => {
         "INSERT INTO users (id, name, grade, role, password_hash) VALUES (?, ?, ?, ?, ?)",
         [student_id, student_id, null, "student", hashed]
       );
-      const token = createSession(student_id, "student", student_id);
+      const token = await createSession(student_id, "student", student_id);
+      await logStudentLogin(student_id, token);
       res.json({ user: { id: student_id, name: student_id, role: "student" }, session_id: token });
       return;
     }
@@ -76,10 +90,39 @@ authRouter.post("/login", async (req: Request, res: Response) => {
       }
     }
 
-    const token = createSession(user.id, user.role || "student", user.name || user.id);
+    const token = await createSession(user.id, user.role || "student", user.name || user.id);
+    if ((user.role || "student") === "student") await logStudentLogin(user.id, token);
     res.json({ user: { id: user.id, name: user.name || user.id, role: user.role || "student" }, session_id: token });
   } catch (err) {
     console.error("Login error:", err);
     res.status(500).json({ error: "登录失败" });
+  }
+});
+
+authRouter.post("/logout", async (req: Request, res: Response) => {
+  try {
+    const token = String(req.headers["x-session-token"] || "");
+    if (!token) {
+      res.status(204).end();
+      return;
+    }
+    const [rows] = await pool.query<any[]>(
+      "SELECT user_id, role FROM sessions WHERE id = ?",
+      [token]
+    );
+    const session = rows[0];
+    if (session?.role === "student") {
+      await pool.query(
+        `INSERT INTO user_actions
+          (user_id, session_id, action_type, action_detail)
+         VALUES (?, ?, 'logout_session', ?)`,
+        [session.user_id, token, JSON.stringify({ source: "student_logout" })]
+      );
+    }
+    await pool.query("DELETE FROM sessions WHERE id = ?", [token]);
+    res.status(204).end();
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ error: "退出失败" });
   }
 });

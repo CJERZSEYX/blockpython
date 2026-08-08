@@ -1,86 +1,183 @@
-﻿import { useEffect, useState } from "react";
-import { Layout, Menu, Button, Table, Typography, message, Popconfirm, Input, Space } from "antd";
-import { TeamOutlined, FileTextOutlined, RobotOutlined, SettingOutlined, ArrowLeftOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button, Input, Space, Statistic, Table, Tag, Typography } from "antd";
+import { appMessage as message } from "../../utils/appMessage";
+import {
+  DownloadOutlined,
+  FileTextOutlined,
+  LogoutOutlined,
+  MessageOutlined,
+  SearchOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
+import { logout } from "../../services/authService";
 
-const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
+
+interface StudentRow {
+  id: string;
+  name: string;
+  created_at: string;
+  action_count: number;
+  message_count: number;
+  first_activity: string | null;
+  last_activity: string | null;
+}
+
+function formatTime(value: string | null) {
+  if (!value) return "暂无记录";
+  return new Date(value).toLocaleString("zh-CN", { hour12: false });
+}
+
+async function downloadFile(path: string, filename: string) {
+  const response = await api.get(path, { responseType: "blob" });
+  const url = URL.createObjectURL(response.data);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 export default function TeacherStudents() {
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<StudentRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => { loadStudents(); }, []);
-
-  const loadStudents = async () => {
+  const loadStudents = useCallback(async () => {
+    setLoading(true);
     try {
       const { data } = await api.get("/teacher/students");
       setStudents(data.students);
-    } catch { message.error("Load failed"); } finally { setLoading(false); }
+    } catch {
+      message.error("学生实验数据加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadStudents(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadStudents]);
+
+  const filteredStudents = useMemo(() => {
+    const keyword = search.trim().toLowerCase();
+    if (!keyword) return students;
+    return students.filter(
+      (student) =>
+        student.id.toLowerCase().includes(keyword) ||
+        (student.name || "").toLowerCase().includes(keyword),
+    );
+  }, [search, students]);
+
+  const actionTotal = students.reduce((sum, row) => sum + Number(row.action_count || 0), 0);
+  const messageTotal = students.reduce((sum, row) => sum + Number(row.message_count || 0), 0);
+
+  const handleExport = async (type: "csv" | "json") => {
+    try {
+      await downloadFile(
+        `/teacher/export.${type}`,
+        type === "csv" ? "experiment_students.csv" : "experiment_full_data.json",
+      );
+      message.success("实验数据已导出");
+    } catch {
+      message.error("导出失败");
+    }
   };
 
-  const handleExport = (id: string) => {
-    window.open(`http://localhost:3001/api/teacher/students/${id}/export`);
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch {
+      // 本地会话仍应允许退出。
+    } finally {
+      sessionStorage.clear();
+      navigate("/teacher/login");
+    }
   };
-
-  const handleExportAll = () => {
-    window.open(`http://localhost:3001/api/teacher/export-all`);
-  };
-
-  const handleDelete = async (id: string) => {
-    try { await api.delete(`/teacher/students/${id}`); message.success("Deleted"); loadStudents(); }
-    catch { message.error("Delete failed"); }
-  };
-
-  const columns = [
-    { title: "Student ID", dataIndex: "id", key: "id" },
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Registered", dataIndex: "created_at", key: "created_at", render: (v: string) => v?.substring(0, 10) },
-    { title: "Started", dataIndex: "tasks_started", key: "tasks_started", width: 60 },
-    { title: "Completed", dataIndex: "tasks_completed", key: "tasks_completed", width: 60 },
-    {
-      title: "Actions", key: "actions",
-      render: (_: any, r: any) => (
-        <>
-          <Button type="link" onClick={() => navigate(`/teacher/students/${r.id}`)}>Details</Button>
-          <Button type="link" onClick={() => handleExport(r.id)}>Export</Button>
-          <Popconfirm title="Are you sure you want to delete this student and all their data?" onConfirm={() => handleDelete(r.id)}>
-            <Button type="link" danger icon={<DeleteOutlined />}>Delete</Button>
-          </Popconfirm>
-        </>
-      ),
-    },
-  ];
 
   return (
-    <Layout style={{ minHeight: "100vh" }}>
-      <Header style={{ background: "#001529", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px" }}>
-        <Button type="text" icon={<ArrowLeftOutlined />} onClick={() => navigate("/teacher")} style={{ color: "#fff" }}>Back</Button>
-        <span style={{ color: "#fff", fontSize: 18 }}>Teacher Admin</span>
-      </Header>
-      <Layout>
-        <Sider width={220} style={{ background: "#fafafa" }}>
-          <Menu mode="inline" style={{ height: "100%" }} selectedKeys={["/teacher/students"]} onClick={({ key }) => navigate(key)}
-            items={[
-              { key: "/teacher/students", icon: <TeamOutlined />, label: "Student Data" },
-              { key: "/teacher/tasks", icon: <FileTextOutlined />, label: "Task Management" },
-              { key: "/teacher/prompts", icon: <RobotOutlined />, label: "Prompt Management" },{ key: "/teacher/settings", icon: <SettingOutlined />, label: "System Settings" },
-            ]} />
-        </Sider>
-        <Content style={{ padding: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-            <Title level={4} style={{ margin: 0 }}>Student Data</Title>
+    <div className="teacher-data-page">
+      <header className="teacher-data-header">
+        <div>
+          <Text className="teacher-data-kicker">ICAP 编程学习实验</Text>
+          <Title level={3}>学生实验数据</Title>
+        </div>
+        <Button icon={<LogoutOutlined />} onClick={() => void handleLogout()}>退出登录</Button>
+      </header>
+
+      <main className="teacher-data-main">
+        <section className="teacher-summary-strip" aria-label="实验数据摘要">
+          <Statistic title="学生人数" value={students.length} prefix={<TeamOutlined />} />
+          <Statistic title="操作记录" value={actionTotal} prefix={<FileTextOutlined />} />
+          <Statistic title="对话消息" value={messageTotal} prefix={<MessageOutlined />} />
+        </section>
+
+        <section className="teacher-data-section">
+          <div className="teacher-data-toolbar">
+            <Input
+              allowClear
+              prefix={<SearchOutlined />}
+              placeholder="搜索学号或姓名"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
             <Space>
-              <Input.Search placeholder="Search by student ID or name" allowClear style={{ width: 200 }} value={search} onChange={(e) => setSearch(e.target.value)} />
-              <Button type="primary" onClick={handleExportAll}>Export All Data</Button>
+              <Button icon={<DownloadOutlined />} onClick={() => void handleExport("csv")}>
+                导出 CSV 摘要
+              </Button>
+              <Button type="primary" icon={<DownloadOutlined />} onClick={() => void handleExport("json")}>
+                导出 JSON 完整包
+              </Button>
             </Space>
           </div>
-          <Table columns={columns} dataSource={students.filter((s) => !search || s.id.includes(search) || (s.name || "").includes(search))} loading={loading} rowKey="id" />
-        </Content>
-      </Layout>
-    </Layout>
+
+          <Table<StudentRow>
+            rowKey="id"
+            loading={loading}
+            dataSource={filteredStudents}
+            pagination={{ pageSize: 15, showSizeChanger: false }}
+            columns={[
+              { title: "学号", dataIndex: "id", width: 150 },
+              { title: "姓名", dataIndex: "name", width: 130, render: (value) => value || "未填写" },
+              {
+                title: "实验记录",
+                dataIndex: "action_count",
+                width: 110,
+                render: (value) => <Tag color="blue">{Number(value)} 条</Tag>,
+              },
+              {
+                title: "对话消息",
+                dataIndex: "message_count",
+                width: 110,
+                render: (value) => <Tag color="cyan">{Number(value)} 条</Tag>,
+              },
+              {
+                title: "首次操作",
+                dataIndex: "first_activity",
+                render: formatTime,
+              },
+              {
+                title: "最近操作",
+                dataIndex: "last_activity",
+                render: formatTime,
+              },
+              {
+                title: "",
+                width: 90,
+                render: (_, row) => (
+                  <Button type="link" onClick={() => navigate(`/teacher/students/${row.id}`)}>
+                    查看详情
+                  </Button>
+                ),
+              },
+            ]}
+          />
+        </section>
+      </main>
+    </div>
   );
 }

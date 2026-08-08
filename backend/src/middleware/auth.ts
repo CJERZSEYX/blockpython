@@ -9,45 +9,75 @@ interface Session {
   session_id: string;
 }
 
-const sessionStore = new Map<string, Session>();
+const SESSION_TTL_HOURS = 24;
 
-setInterval(() => { sessionStore.clear(); }, 86400_000);
-
-export function createSession(user_id: string, role: string, name: string): string {
+export async function createSession(user_id: string, role: string, name: string): Promise<string> {
   const token = uuidv4();
-  sessionStore.set(token, { user_id, role, name, session_id: token });
+  await pool.query(
+    `INSERT INTO sessions (id, user_id, role, name, expires_at)
+     VALUES (?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL ? HOUR))`,
+    [token, user_id, role, name, SESSION_TTL_HOURS]
+  );
   return token;
 }
 
-export function getSession(token: string): Session | undefined {
-  return sessionStore.get(token);
+export async function getSession(token: string): Promise<Session | undefined> {
+  const [rows] = await pool.query<any[]>(
+    `SELECT id AS session_id, user_id, role, name
+     FROM sessions
+     WHERE id = ? AND expires_at > NOW()`,
+    [token]
+  );
+  return rows[0] as Session | undefined;
 }
 
 export function requireAuth(role?: "student" | "teacher") {
   return async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers["x-session-token"] as string;
-    if (!token) { res.status(401).json({ error: "未登录" }); return; }
+    try {
+      const token = req.headers["x-session-token"] as string;
+      if (!token) {
+        res.status(401).json({ error: "未登录" });
+        return;
+      }
 
-    const session = sessionStore.get(token);
-    if (!session) { res.status(401).json({ error: "会话已过期，请重新登录" }); return; }
+      const session = await getSession(token);
+      if (!session) {
+        res.status(401).json({ error: "登录已过期，请重新登录" });
+        return;
+      }
 
-    const [rows] = await pool.query<any[]>("SELECT id, role FROM users WHERE id = ?", [session.user_id]);
-    if (rows.length === 0) { sessionStore.delete(token); res.status(401).json({ error: "账号不存在" }); return; }
+      const [rows] = await pool.query<any[]>(
+        "SELECT id, role FROM users WHERE id = ?",
+        [session.user_id]
+      );
+      if (rows.length === 0) {
+        await pool.query("DELETE FROM sessions WHERE id = ?", [token]);
+        res.status(401).json({ error: "账号不存在" });
+        return;
+      }
 
-    if (role && session.role !== role) {
-      res.status(403).json({ error: role === "teacher" ? "需要教师权限" : "需要学生权限" });
-      return;
+      if (role && session.role !== role) {
+        res.status(403).json({ error: role === "teacher" ? "需要教师权限" : "需要学生权限" });
+        return;
+      }
+
+      (req as any).session = session;
+      next();
+    } catch (error) {
+      next(error);
     }
-
-    (req as any).session = session;
-    next();
   };
 }
 
-export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const token = req.headers["x-session-token"] as string;
-  if (token && sessionStore.has(token)) {
-    (req as any).session = sessionStore.get(token);
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  try {
+    const token = req.headers["x-session-token"] as string;
+    if (token) {
+      const session = await getSession(token);
+      if (session) (req as any).session = session;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 }

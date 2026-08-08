@@ -1,103 +1,91 @@
 import { Router, Request, Response } from "express";
 import pool from "../config/database";
+import { CURRICULUM_VERSION } from "../tasks/curriculum";
+import { queueLearningProfileRefresh } from "../services/learningProfiles";
 
 export const taskRouter = Router();
 
-taskRouter.get("/list", async (_req: Request, res: Response) => {
+taskRouter.get("/list", async (req: Request, res: Response) => {
   try {
     const [tasks] = await pool.query<any[]>(
-      "SELECT id, title, description, sort_order FROM tasks ORDER BY sort_order"
+      `SELECT id, title, description, sort_order, version, suggested_lessons
+       FROM tasks WHERE version = ? ORDER BY sort_order`,
+      [CURRICULUM_VERSION]
     );
-    res.json({ tasks });
+    const session = (req as any).session;
+    if (session?.user_id) {
+      const [completedRows] = await pool.query<any[]>(
+        `SELECT task_id FROM student_task_states
+         WHERE user_id=? AND c_completed_at IS NOT NULL`,
+        [session.user_id]
+      );
+      const [adviceRows] = await pool.query<any[]>(
+        `SELECT task_id, MAX(created_at) AS advice_updated_at
+         FROM learning_summaries
+         WHERE user_id=? AND scope='task' AND is_stale=0
+           AND JSON_EXTRACT(summary_json, '$.student_advice.achieved') IS NOT NULL
+         GROUP BY task_id`,
+        [session.user_id]
+      );
+      const adviceByTask = new Map(adviceRows.map((row) => [Number(row.task_id), row.advice_updated_at || null]));
+      const completedTaskIds = new Set(completedRows.map((row) => Number(row.task_id)));
+      completedTaskIds.forEach((taskId) => {
+        if (!adviceByTask.has(taskId)) queueLearningProfileRefresh(session.user_id, taskId);
+      });
+      res.json({
+        tasks: tasks.map((task) => ({
+          ...task,
+          has_learning_advice: completedTaskIds.has(Number(task.id)),
+          learning_advice_updated_at: adviceByTask.get(Number(task.id)) || null,
+        })),
+      });
+      return;
+    }
+    res.json({ tasks: tasks.map((task) => ({ ...task, has_learning_advice: false, learning_advice_updated_at: null })) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "获取任务列表失败" });
   }
 });
 
+taskRouter.get("/:id/cstage", async (req: Request, res: Response) => {
+  try {
+    const [rows] = await pool.query<any[]>(
+      "SELECT content_json FROM tasks WHERE id = ? AND version = ?",
+      [req.params.id, CURRICULUM_VERSION]
+    );
+    if (rows.length === 0) {
+      res.status(404).json({ error: "任务不存在" });
+      return;
+    }
+    res.json({ blocks_xml: rows[0].content_json?.c_stage?.blocks_xml || "" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "获取积木图示失败" });
+  }
+});
+
 taskRouter.get("/:id", async (req: Request, res: Response) => {
   try {
     const [rows] = await pool.query<any[]>(
-      "SELECT * FROM tasks WHERE id = ?",
-      [req.params.id]
+      `SELECT id, title, description, sort_order, content_json, version, suggested_lessons
+       FROM tasks WHERE id = ? AND version = ?`,
+      [req.params.id, CURRICULUM_VERSION]
     );
-    if (rows.length === 0) { res.status(404).json({ error: "任务不存在" }); return; }
-    res.json({ task: rows[0] });
+    if (rows.length === 0) {
+      res.status(404).json({ error: "任务不存在" });
+      return;
+    }
+    const task = rows[0];
+    const { support: _privateSupport, ...studentContent } = task.content_json || {};
+    res.json({
+      task: {
+        ...task,
+        content_json: studentContent,
+      },
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "获取任务详情失败" });
-  }
-});
-
-taskRouter.get("/progress/:userId", async (req: Request, res: Response) => {
-  try {
-    const session = (req as any).session;
-    if (session && session.user_id !== req.params.userId) {
-      res.status(403).json({ error: "无权查看其他用户的进度" });
-      return;
-    }
-    const [rows] = await pool.query<any[]>(
-      `SELECT up.task_id, up.current_stage, up.status, up.completed_at
-       FROM user_progress up WHERE up.user_id = ? ORDER BY up.task_id`,
-      [req.params.userId]
-    );
-    res.json({ progress: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "获取进度失败" });
-  }
-});
-
-taskRouter.post("/start", async (req: Request, res: Response) => {
-  try {
-    const session = (req as any).session;
-    const user_id = session?.user_id || req.body.user_id;
-    const { task_id } = req.body;
-    // 仅在未开始时插入，已进行中或已完成则不重置
-    await pool.query(
-      `INSERT INTO user_progress (user_id, task_id, current_stage, status, started_at)
-       VALUES (?, ?, 'P', 'in_progress', NOW())
-       ON DUPLICATE KEY UPDATE
-         current_stage = IF(status = 'not_started' OR status IS NULL, 'P', current_stage),
-         status = IF(status = 'not_started' OR status IS NULL, 'in_progress', status),
-         started_at = IF(started_at IS NULL, NOW(), started_at)`,
-      [user_id, task_id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "开始任务失败" });
-  }
-});
-
-taskRouter.post("/updateStage", async (req: Request, res: Response) => {
-  try {
-    const session = (req as any).session;
-    const user_id = session?.user_id || req.body.user_id;
-    const { task_id, stage } = req.body;
-    await pool.query(
-      "UPDATE user_progress SET current_stage = ? WHERE user_id = ? AND task_id = ?",
-      [stage, user_id, task_id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "更新阶段失败" });
-  }
-});
-
-taskRouter.post("/complete", async (req: Request, res: Response) => {
-  try {
-    const session = (req as any).session;
-    const user_id = session?.user_id || req.body.user_id;
-    const { task_id } = req.body;
-    await pool.query(
-      "UPDATE user_progress SET status = 'completed', completed_at = NOW() WHERE user_id = ? AND task_id = ?",
-      [user_id, task_id]
-    );
-    res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "标记完成失败" });
   }
 });

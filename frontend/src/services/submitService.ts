@@ -1,40 +1,20 @@
 import api from "./api";
+import type { ExecutionResult, Stage } from "../types";
 
-export const submitBlocks = async (
-  blocklyXml: string,
-  expectedBlocks: string,
-  taskId?: number
-): Promise<{
-  passed: boolean;
-  block_check: {
-    expected: Record<string, number>;
-    got: Record<string, number>;
-    missing: string[];
-    valueErrors: string[];
-    connected: boolean;
-  };
-}> => {
-  const { data } = await api.post("/submit/run", {
-    check_type: "code_to_block",
-    blockly_xml: blocklyXml,
-    expected_blocks: expectedBlocks,
-    task_id: taskId,
-  });
-  return data;
-};
+interface ExecuteRequest {
+  task_id: number;
+  stage: Extract<Stage, "A" | "C" | "I">;
+  code?: string;
+  blockly_xml?: string;
+  input?: string;
+  attempt?: number;
+  activity_summary?: Record<string, number>;
+  operation_id: string;
+  artifact_hash: string;
+  artifact_version: number;
+}
 
-export const runCode = async (
-  code: string,
-  expectedOutput?: string
-): Promise<{
-  passed: boolean;
-  stdout: string;
-  stderr: string;
-}> => {
-  const { data } = await api.post("/submit/run", {
-    check_type: "code_run",
-    code,
-    expected_output: expectedOutput,
-  });
+export const executeProgram = async (request: ExecuteRequest): Promise<ExecutionResult> => {
+  const { data } = await api.post<ExecutionResult>("/submit/execute", request);
   return data;
 };

@@ -29,14 +29,14 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <Result
           status="warning"
-          title="Something went wrong"
-          subTitle={this.state.error?.message || "Unknown error"}
+          title="页面出现异常"
+          subTitle={this.state.error?.message || "未知错误"}
           extra={[
             <Button key="reload" type="primary" onClick={() => window.location.reload()}>
-              Reload
+              刷新页面
             </Button>,
             <Button key="home" onClick={() => { window.location.href = "/"; }}>
-              Go Home
+              返回首页
             </Button>,
           ]}
         />

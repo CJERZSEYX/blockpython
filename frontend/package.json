@@ -7,21 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test:block-connections": "node --experimental-strip-types scripts/validate-block-connections.ts",
+    "test:stage-feedback": "node --experimental-strip-types scripts/validate-stage-feedback.ts",
     "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.3",
-    "@codemirror/lang-python": "^6.2.1",
-    "@codemirror/state": "^6.6.0",
-    "@codemirror/theme-one-dark": "^6.1.3",
-    "@codemirror/view": "^6.42.1",
     "antd": "^6.3.7",
     "axios": "^1.16.0",
     "blockly": "^12.5.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.15.0",
-    "recharts": "^3.8.1",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
